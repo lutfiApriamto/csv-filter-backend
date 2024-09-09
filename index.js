@@ -27,18 +27,28 @@ app.post('/upload', upload.single('file'), (req, res) => {
     // Parsing CSV menggunakan papaparse
     const parsedData = Papa.parse(data, { header: true });
 
-    // Filter dan ubah nama kolom phone_number menjadi number
+    // Track numbers that have been seen
+    const uniqueNumbers = new Set();
+
+    // Filter, remove duplicates, dan ubah nama kolom phone_number menjadi number
     const filteredData = parsedData.data
       .filter(row => row.name && row.phone_number && row.phone_number.startsWith('08')) 
       .map(row => {
-        const cleanedName = row.name.replace(/"+/g, '');
-        const finalName = `"${cleanedName}"`;
-        const cleanedNumber = row.phone_number.replace(/-/g, '').replace(/^0/, '+62');
+        const cleanedName = row.name.replace(/"+/g, '');  // Membersihkan tanda petik ganda
+        const finalName = `"${cleanedName}"`;  // Menambahkan tanda petik ganda di awal dan akhir
+        const cleanedNumber = row.phone_number.replace(/-/g, '').replace(/^0/, '+62');  // Ubah format nomor
 
         return {
           name: finalName,
           number: cleanedNumber
         };
+      })
+      .filter(row => {
+        if (!uniqueNumbers.has(row.number)) {
+          uniqueNumbers.add(row.number);  // Tambahkan nomor ke set jika belum ada
+          return true;
+        }
+        return false;
       });
 
     // Menyusun CSV secara manual
